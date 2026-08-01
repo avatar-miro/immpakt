@@ -1,0 +1,103 @@
+name: firmware release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:      # build the artifacts without cutting a release
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    # Same image build.sh uses locally, so CI cannot drift from your desk.
+    container: espressif/idf:release-v5.3
+    permissions:
+      contents: write     # to create the release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        shell: bash
+        run: |
+          # The IDF image sets its environment in an entrypoint that `container:`
+          # replaces, so export.sh has to be sourced by hand here.
+          . "$IDF_PATH/export.sh"
+          cd firmware
+          idf.py set-target esp32c3 build
+
+      - name: Check the tag matches the firmware's own version string
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          fw=$(grep -oP '#define FW_VERSION\s+"\K[^"]+' firmware/main/defaults.h)
+          if [ "$tag" != "$fw" ]; then
+            echo "::warning::tag $GITHUB_REF_NAME does not match FW_VERSION '$fw' in defaults.h — the released binary will report '$fw' at boot"
+          fi
+
+      - name: Package
+        shell: bash
+        working-directory: firmware
+        run: |
+          . "$IDF_PATH/export.sh"
+          mkdir -p dist
+          cp build/immpakt.bin \
+             build/bootloader/bootloader.bin \
+             build/partition_table/partition-table.bin dist/
+
+          # One flat image for a single-command flash and for browser-based
+          # flashers, alongside the three-part set for esptool users.
+          esptool.py --chip esp32c3 merge_bin -o dist/immpakt-merged.bin \
+            --flash_mode dio --flash_freq 80m --flash_size 16MB \
+            0x0     build/bootloader/bootloader.bin \
+            0x8000  build/partition_table/partition-table.bin \
+            0x10000 build/immpakt.bin
+
+          cd dist && sha256sum ./*.bin > SHA256SUMS && cat SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: immpakt-firmware
+          path: firmware/dist/*
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: firmware/dist/*
+          generate_release_notes: true
+          body: |
+            ## Flashing
+
+            **Back up your stock firmware first.** Replacing it is not reversible
+            without a verified dump:
+
+            ```bash
+            firmware/backup-stock.sh
+            ```
+
+            Then either flash the single merged image:
+
+            ```bash
+            esptool.py --chip esp32c3 --port /dev/cu.usbmodemXXXX \
+              write_flash 0x0 immpakt-merged.bin
+            ```
+
+            or the three parts individually:
+
+            ```bash
+            esptool.py --chip esp32c3 --port /dev/cu.usbmodemXXXX write_flash \
+              0x0     bootloader.bin \
+              0x8000  partition-table.bin \
+              0x10000 immpakt.bin
+            ```
+
+            First boot opens the setup portal: join Wi-Fi **ImmPakt-Setup**
+            (password `immpakt123`), open <http://192.168.4.1>, and point
+            **Server URL** at your ImmPakt server.
+
+            Firmware is AGPL-3.0 by descent from
+            [varanu5/picpak-tesserae-client](https://github.com/varanu5/picpak-tesserae-client).

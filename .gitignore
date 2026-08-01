@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+config/config.yaml
+data/
+*.bin
+# ...but the panel splash blobs are SOURCE, embedded by CMake's EMBED_FILES.
+# Without this negation `*.bin` silently excludes them and the firmware build
+# fails in CI with "Cannot find source file" while still working locally.
+!firmware/main/assets/*.bin
+preview*.png
+.env
+.DS_Store
+firmware/main/secrets.h

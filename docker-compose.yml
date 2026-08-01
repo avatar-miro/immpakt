@@ -1,0 +1,31 @@
+services:
+  immpakt:
+    # Published image. Override the namespace in .env if you build your own:
+    #   IMMPAKT_IMAGE=youruser/immpakt:latest
+    image: "${IMMPAKT_IMAGE:-avatarmiro/immpakt:latest}"
+    # Developing on the source? Uncomment to build locally instead of pulling.
+    # The image: line above then just names the local build.
+    # build: .
+    container_name: immpakt
+    restart: unless-stopped
+    ports:
+      # Host port only. The app inside the container always listens on 8080, so
+      # the healthcheck and EXPOSE stay valid whatever you publish it as.
+      #   IMMPAKT_HTTP_PORT=9000 docker compose up -d
+      - "${IMMPAKT_HTTP_PORT:-8080}:8080"
+    environment:
+      # Everything here OVERRIDES config/config.yaml, so anything already set
+      # in that file should stay commented out - otherwise editing the file
+      # appears to do nothing. Empty values are ignored, not applied.
+      #
+      # IMMICH_URL: "http://immich-server:2283"
+      IMMICH_API_KEY: "${IMMICH_API_KEY:-}"
+      # IMMPAKT_DEVICE_KEY: "optional shared secret if exposed beyond the LAN"
+    volumes:
+      - ./data:/data
+      - ./config:/config
+    # Uncomment when Immich runs in this same compose project:
+    # networks: [immich_default]
+# networks:
+#   immich_default:
+#     external: true

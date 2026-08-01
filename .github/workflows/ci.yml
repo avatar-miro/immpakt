@@ -1,0 +1,30 @@
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_call:      # so the release workflows can gate on this
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      # fonts-dejavu-core matches the runtime image; without a TrueType font
+      # the overlay silently falls back to PIL's bitmap font and the caption
+      # geometry tests measure something different from production.
+      - name: Install fonts
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+
+      - name: Run tests
+        run: pytest -q

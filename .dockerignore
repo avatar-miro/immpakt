@@ -1,0 +1,19 @@
+# Keep the build context small: without this the whole repo ships to the
+# daemon on every build, including a ~2 GB firmware build tree and a 16 MB
+# stock-firmware dump.
+.git
+.github
+.venv
+__pycache__
+*.egg-info
+.pytest_cache
+data
+config
+res
+tests
+firmware
+docs
+*.md
+!README.md
+.env
+.DS_Store

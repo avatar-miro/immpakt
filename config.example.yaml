@@ -1,0 +1,96 @@
+# ImmPakt configuration.
+# Copy to config.yaml and edit. Secrets can come from the environment instead:
+#   IMMICH_URL, IMMICH_API_KEY, IMMPAKT_PORT, IMMPAKT_DATA_DIR, IMMPAKT_DEVICE_KEY
+
+immich:
+  url: http://immich-server:2283
+  api_key: ""          # Immich -> Account Settings -> API Keys
+  verify_tls: true
+  timeout_s: 30
+
+server:
+  bind: 0.0.0.0
+  port: 8080
+  data_dir: ./data
+  device_key: ""       # optional shared secret; devices then send ?key=<secret>
+
+# Which photos are eligible. Leave everything empty for the whole library.
+source:
+  albums: []           # album UUIDs -- the usual way to curate a frame
+  people: []           # person UUIDs (ignored when albums are set)
+  favorites_only: false
+  memories: false      # include "on this day" assets
+  taken_after: null    # ISO date, e.g. "2015-01-01"
+  taken_before: null
+  # Skip photos narrower than this aspect ratio. 1.0 drops every portrait;
+  # null keeps them, and the fit policy below decides how they land.
+  min_aspect: null
+  order: random        # random | newest | oldest
+  refresh_interval_s: 3600
+
+frame:
+  # How long the device deep-sleeps between photos. The panel refresh is the
+  # dominant power cost, so this dial is simultaneously "photo cadence" and
+  # "battery life". 21600 = 6 hours = 4 photos/day.
+  interval_s: 21600
+  rotate: 0            # 0 | 90 | 180 | 270 -- for hanging the frame portrait
+
+  dither: floyd-steinberg   # floyd-steinberg | none
+  dither_strength: 0.9      # < 1.0 trades a little banding for less noise
+
+  # RGB the dither aims at for each panel colour, in index order:
+  # black, white, yellow, red. These should describe what your panel ACTUALLY
+  # renders, not pure sRGB primaries -- photograph a test frame and sample it.
+  palette:
+    - [0, 0, 0]
+    - [255, 255, 255]
+    - [228, 190, 32]
+    - [166, 42, 42]
+
+  fit:
+    # cover    every photo fills all 400x300, cropped as much as it takes.
+    #          Panoramas and portraits alike. Nothing is ever letterboxed.
+    # auto     crop up to the tolerances below, mat anything beyond them.
+    # contain  never crop; always fit the whole photo and mat the remainder.
+    mode: cover
+
+    # Only used when mode is `auto`. Largest aspect mismatch still cropped,
+    # asymmetric because losing the sides of a wide photo costs less than
+    # losing the top and bottom of a tall one. See render.py for the table.
+    crop_tolerance_wide: 8.0    # landscape/panorama
+    crop_tolerance_tall: 1.40   # portrait
+
+    mat_color: 1       # palette index for the bars, when any are drawn
+    # Bias the crop window toward the faces Immich already detected, with a
+    # little headroom. Matters most under `cover`, where a 9:16 portrait keeps
+    # only ~42% of its height and the window has to land on the subject.
+    face_aware: true
+
+  # A four-colour panel has only red and yellow as chroma, so photos need a
+  # push before quantisation or they dither toward flat grey.
+  enhance:
+    autocontrast: true
+    autocontrast_cutoff: 1.0
+    brightness: 1.0
+    contrast: 1.10
+    saturation: 1.45
+    sharpness: 1.20
+
+  overlay:
+    enabled: false
+    show_date: true
+    show_location: true
+    date_format: "%-d %B %Y"
+    position: bottom-left   # bottom-left | bottom-right | top-left | top-right
+    color: 1                # palette index for the text (1 = white)
+    shadow: 0               # palette index for the outline (0 = black)
+    font_size: 16
+    margin: 16              # inset from the panel edges, px
+
+# Optional per-device overrides, keyed by device id. Deep-merged over `frame`.
+devices: {}
+#  picpak-a1b2c3:
+#    rotate: 90
+#    interval_s: 43200
+#    overlay:
+#      enabled: true

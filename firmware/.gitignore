@@ -1,0 +1,8 @@
+build/
+sdkconfig
+sdkconfig.old
+build.log
+stock-backup/
+managed_components/
+dependencies.lock
+dist/

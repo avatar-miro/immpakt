@@ -1,0 +1,75 @@
+name: docker
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      # Pull requests build to prove the Dockerfile still works, but never
+      # push -- a fork's PR must not be able to publish under your account.
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Work out tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # Fallback keeps fork PRs working: their secrets are empty, and a
+          # bare "/immpakt" is not a valid image name. Those runs build but
+          # never push, so the placeholder is never published.
+          images: ${{ secrets.DOCKERHUB_USER || 'local' }}/immpakt
+          # A git tag v1.2.3 publishes 1.2.3, 1.2 and latest.
+          # Anything else (a push to main) publishes only :snapshot, so
+          # `latest` never silently moves to an untagged commit.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=snapshot,enable=${{ !startsWith(github.ref, 'refs/tags/') }}
+          flavor: |
+            latest=auto
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "### Pushed"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

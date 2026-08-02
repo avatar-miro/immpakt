@@ -44,6 +44,27 @@ midtones become dithered black-and-white with red and yellow doing what chroma
 they can. `frame.enhance` and `frame.palette` are the dials that matter; see
 [Tuning the look](#tuning-the-look).
 
+## Disclaimer
+
+**Use at your own risk.** This is a personal project, not a product.
+
+- **Not affiliated** with, endorsed by, or supported by AUTOHEART / PicPak, or by
+  Immich. "PicPak" is their name for their hardware; this project just talks to it.
+- **Flashing replaces the stock firmware.** Without the verified dump that
+  `backup-stock.sh` produces there is no way back, and it may void your warranty.
+  Read [Firmware](#firmware) before you plug anything in.
+- **It is real hardware.** An interrupted write, a marginal USB cable or a flat
+  cell can leave a frame that does not boot. This board is brownout-prone enough
+  that the upstream firmware caps radio TX power to work around it.
+- **Defaults are tuned for a trusted LAN.** The dashboard ships with a known
+  password and the device endpoint has no authentication at all. Read
+  [Security](#security) before exposing it to anything wider.
+- **No warranty of any kind**, express or implied, per AGPL-3.0 sections 15 and 16.
+
+Nothing here reads or writes your Immich library beyond fetching thumbnails: the
+API key needs read access only, and no endpoint in this project deletes or
+modifies an asset.
+
 ## Quick start
 
 ```bash

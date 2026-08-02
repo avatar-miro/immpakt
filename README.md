@@ -8,8 +8,8 @@ E Ink panel instead of an always-on screen.
 
 > Built with help from an AI coding assistant. The rendering, protocol and
 > firmware decisions were all reviewed and tested on real hardware, but read the
-> code before you trust it with your library - and definitely before you flash
-> anything.
+> code before you trust it with your library, and definitely before you flash
+> anything. **Use at your own risk** - see [Disclaimer](#disclaimer).
 
 Two pieces:
 
@@ -21,6 +21,29 @@ Two pieces:
 The frame is asleep with its radio off ~99.9% of the time. It wakes on a timer,
 makes exactly one HTTP request, paints, and sleeps again. Nothing here depends on
 Tesserae, MQTT, or a broker.
+
+## Contents
+
+- [Why the rendering is server-side](#why-the-rendering-is-server-side)
+- [Disclaimer](#disclaimer)
+- [Quick start](#quick-start)
+- [Device protocol](#device-protocol)
+- [Frame format](#frame-format)
+- [Aspect ratio: crop or mat?](#aspect-ratio-crop-or-mat)
+- [Tuning the look](#tuning-the-look)
+- [Photo selection](#photo-selection)
+- [Dashboard](#dashboard)
+  - [Settings are queued, not pushed](#settings-are-queued-not-pushed)
+- [Battery](#battery)
+- [Firmware](#firmware)
+  - [Flashing a release (what most people want)](#flashing-a-release-what-most-people-want)
+  - [Building it yourself](#building-it-yourself)
+  - [First boot](#first-boot)
+  - [Previewing the setup portal without flashing](#previewing-the-setup-portal-without-flashing)
+- [Volume permissions](#volume-permissions)
+- [Security](#security)
+- [Releases](#releases)
+- [Development](#development)
 
 ## Why the rendering is server-side
 
@@ -324,7 +347,7 @@ way `setup_get_handler()` does, re-reading on every request, so edit, refresh,
 repeat. `--error "..."` previews the failure banner, `--page thanks` the
 post-submit page, `--blank` a factory-fresh device.
 
-### Volume permissions
+## Volume permissions
 
 Works on a fresh host with nothing prepared. `./data` and `./config` are bind
 mounts carrying the **host's** ownership, not the image's, so startup uses root

@@ -28,8 +28,11 @@
 #define MQTT_DEFAULT_PASS   ""
 #endif
 
+// Fallback for local builds; CI passes -DFW_VERSION="<tag>" so a released
+// binary reports the version it was tagged as. The -dev suffix makes an
+// unstamped build obvious in the boot log.
 #ifndef FW_VERSION
-#define FW_VERSION          "0.0.3"
+#define FW_VERSION          "0.0.3-dev"
 #endif
 #define DEVICE_KIND         "immpakt"
 

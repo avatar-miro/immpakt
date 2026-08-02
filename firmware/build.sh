@@ -20,10 +20,16 @@ docker image inspect "$IDF_IMAGE" >/dev/null 2>&1 || {
 # `set-target` regenerates sdkconfig from scratch, so it must run ONCE on a
 # fresh tree and never again — re-running it on an existing build tree leaves
 # the config half-written and the next compile fails on a missing sdkconfig.h.
+# Stamp the version from git so a local build reports the same string CI
+# would produce for this commit. Falls back to the value in defaults.h.
+VER="${IMMPAKT_VERSION:-$(git -C "$HERE" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')}"
+STAMP=""
+[[ -n "$VER" ]] && STAMP="-DPROJECT_VER=$VER -DFW_VERSION=\\\"$VER\\\""
+
 if [[ -d "$HERE/build" ]]; then
-  CMD="idf.py build"
+  CMD="idf.py $STAMP build"
 else
-  CMD="idf.py set-target esp32c3 build"
+  CMD="idf.py $STAMP set-target esp32c3 build"
 fi
 
 LOG="$HERE/build.log"

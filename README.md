@@ -65,7 +65,7 @@ panel will paint.
 
 The API key can live in `config/config.yaml` or in the environment. **Anything
 set as an environment variable overrides the file**, so if you put `IMMICH_URL`
-in `docker-compose.yml` *and* in the config file, editing the file will appear to
+in `docker-compose.yaml` *and* in the config file, editing the file will appear to
 do nothing.
 
 Without Docker:
@@ -314,7 +314,7 @@ self-hosted images use, and it is why they need no host preparation.
 Point it at your own user and `./data` stays readable outside the container:
 
 ```ini
-# .env beside docker-compose.yml
+# .env beside docker-compose.yaml
 PUID=1000
 PGID=1000
 ```

@@ -44,7 +44,7 @@ def doctor() -> int:
         host = cfg.immich.url.split("//")[-1].split(":")[0].split("/")[0]
         print("        Most likely one of:")
         print(f"        - '{host}' does not resolve from inside this container.")
-        print("          Join Immich's docker network (see docker-compose.yml), or")
+        print("          Join Immich's docker network (see docker-compose.yaml), or")
         print("          point IMMICH_URL at a LAN IP, e.g. http://192.168.1.10:2283")
         print("        - Immich is on a different port (default 2283)")
         return 1

@@ -64,7 +64,7 @@ Either chown the directories to that uid, on the host:
     mkdir -p data config
     sudo chown -R $uid:$gid data config
 
-or drop the \`user:\` line from docker-compose.yml and set PUID/PGID instead,
+or drop the \`user:\` line from docker-compose.yaml and set PUID/PGID instead,
 which lets the container chown them for you at startup.
 
 EOF

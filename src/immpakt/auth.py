@@ -22,11 +22,16 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 # Paths that never require a session. Everything else does.
-PUBLIC_PATHS = frozenset({"/login", "/logout", "/favicon.ico"})
+PUBLIC_PATHS = frozenset({"/login", "/logout", "/favicon.ico", "/favicon.svg"})
 # The frame's own endpoint: gated by server.device_key, never by a session.
 DEVICE_PREFIX = "/api/frame.bin"
 
 COOKIE = "immpakt_session"
+
+# The mark, as a standalone document for /favicon.svg. The same geometry is
+# inlined into the pages; res/icon/immpakt.svg is the canonical source.
+ICON_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">'
+            ' 256 256"><defs><mask id="mk"><rect width="256" height="256" fill="#fff"/><rect x="16.13" y="16.13" width="223.74" height="164.86" rx="20.99"/><circle cx="55.04" cy="216.32" r="29.95"/><rect x="85.25" y="196.61" width="154.62" height="39.42" rx="16.13"/></mask></defs><rect x="2.56" y="2.56" width="250.88" height="250.88" rx="25.6" fill="#1E83F7" stroke="#FFB400" stroke-width="5.12" mask="url(#mk)"/><rect x="26.88" y="26.88" width="202.24" height="143.36" rx="10.24" fill="#ED79B5"/><circle cx="55.04" cy="216.32" r="19.2" fill="#FA2921"/><rect x="96" y="207.36" width="133.12" height="17.92" rx="5.38" fill="#18C249"/></svg>')
 DEFAULT_PASSWORD = "immpakt"
 
 
@@ -105,8 +110,7 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;
 .box{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;
   padding:1.75rem;width:min(92vw,22rem)}
 .brand{display:flex;align-items:center;gap:.6rem;margin-bottom:.2rem}
-.mark{display:flex;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px var(--border)}
-.mark i{width:9px;height:18px;display:block}
+.mark{width:24px;height:24px;display:block;flex:0 0 auto}
 h1{font-size:1.05rem;font-weight:650;margin:0}
 p.sub{color:var(--text-3);font-size:.82rem;margin:.1rem 0 1.2rem}
 label{display:block;font-size:.78rem;color:var(--text-2);font-weight:600;
@@ -132,13 +136,11 @@ def login_page(base_css: str, error: str = "", default_creds: bool = False) -> s
     )
     return f"""<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in &middot; ImmPakt</title><style>{base_css}{LOGIN_CSS}</style></head><body>
+<title>Sign in &middot; ImmPakt</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>{base_css}{LOGIN_CSS}</style></head><body>
 <form class="box" method="post" action="/login">
   <div class="brand">
-    <span class="mark" aria-hidden="true">
-      <i style="background:var(--panel-k)"></i><i style="background:var(--panel-w)"></i>
-      <i style="background:var(--panel-y)"></i><i style="background:var(--panel-r)"></i>
-    </span>
+    <svg class="mark" viewBox="0 0 256 256" aria-hidden="true"><defs><mask id="mk"><rect width="256" height="256" fill="#fff"/><rect x="16.13" y="16.13" width="223.74" height="164.86" rx="20.99"/><circle cx="55.04" cy="216.32" r="29.95"/><rect x="85.25" y="196.61" width="154.62" height="39.42" rx="16.13"/></mask></defs><rect x="2.56" y="2.56" width="250.88" height="250.88" rx="25.6" fill="#1E83F7" stroke="#FFB400" stroke-width="5.12" mask="url(#mk)"/><rect x="26.88" y="26.88" width="202.24" height="143.36" rx="10.24" fill="#ED79B5"/><circle cx="55.04" cy="216.32" r="19.2" fill="#FA2921"/><rect x="96" y="207.36" width="133.12" height="17.92" rx="5.38" fill="#18C249"/></svg>
     <h1>ImmPakt</h1>
   </div>
   <p class="sub">Sign in to manage your frames</p>

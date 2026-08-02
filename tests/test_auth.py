@@ -91,3 +91,19 @@ def test_signing_secret_survives_a_restart(tmp_path):
     a = auth.load_or_create_secret(str(tmp_path))
     assert auth.load_or_create_secret(str(tmp_path)) == a
     assert len(a) >= 32
+
+
+def test_favicon_is_public_and_is_an_svg(client):
+    """A browser fetches the favicon before any session exists; if it 401s the
+    tab shows a broken icon on the login page itself."""
+    c, _ = client(auth_enabled=True)
+    r = c.get("/favicon.svg", follow_redirects=False)
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("image/svg+xml")
+    assert r.text.startswith("<svg") and r.text.rstrip().endswith("</svg>")
+
+
+def test_icon_uses_the_immich_brand_hexes(client):
+    from immpakt import auth
+    for hexcode in ("#1E83F7", "#FFB400", "#ED79B5", "#FA2921", "#18C249"):
+        assert hexcode in auth.ICON_SVG, f"{hexcode} missing from the mark"

@@ -1,16 +1,90 @@
-name: firmware release
+name: firmware
 
+# No `paths:` on the trigger: GitHub ANDs ref and path filters, so a tag whose
+# commit touched only docs would skip its own release. The `changes` job below
+# decides instead, comparing against the PREVIOUS TAG rather than the previous
+# commit -- what matters for a release is "did the firmware move since the last
+# one", not "did this one commit touch it".
 on:
   push:
+    branches: [main, master]
     tags: ["v*"]
-  workflow_dispatch:      # build the artifacts without cutting a release
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: firmware-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.d.outputs.build }}
+      release: ${{ steps.d.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # need tags and history to diff against
+
+      - name: Did the firmware change?
+        id: d
+        shell: bash
+        env:
+          PATHS: '^(firmware/|\.github/workflows/firmware\.yaml)'
+        run: |
+          set -euo pipefail
+          is_tag=false
+          [[ "$GITHUB_REF" == refs/tags/* ]] && is_tag=true
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            # Explicit manual run: build so the artifacts exist, never release.
+            echo "build=true"   >> "$GITHUB_OUTPUT"
+            echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          if $is_tag; then
+            prev=$(git tag --sort=-creatordate | grep -vFx "$GITHUB_REF_NAME" | head -1 || true)
+            if [[ -z "$prev" ]]; then
+              echo "::notice::no previous tag; treating as the first firmware release"
+              echo "build=true" >> "$GITHUB_OUTPUT"; echo "release=true" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            base="$prev"
+            echo "comparing $GITHUB_REF_NAME against $prev"
+          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+            if [[ -z "$base" || "$base" == 0000000000000000000000000000000000000000 ]] \
+               || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              echo "build=true" >> "$GITHUB_OUTPUT"; echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+          fi
+
+          changed=$(git diff --name-only "$base" "$GITHUB_SHA" || true)
+          echo "changed:"; echo "$changed" | sed 's/^/  /'
+
+          if grep -qE "$PATHS" <<<"$changed"; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "release=$is_tag" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            if $is_tag; then
+              echo "::notice::firmware unchanged since $base -- no firmware release for $GITHUB_REF_NAME"
+            else
+              echo "::notice::no firmware changes; skipping"
+            fi
+          fi
+
   test:
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     uses: ./.github/workflows/ci.yaml
 
   build:
-    needs: test
+    needs: [changes, test]
+    if: needs.changes.outputs.build == 'true'
     runs-on: ubuntu-latest
     # Same image build.sh uses locally, so CI cannot drift from your desk.
     container: espressif/idf:release-v5.3
@@ -29,7 +103,7 @@ jobs:
           idf.py set-target esp32c3 build
 
       - name: Check the tag matches the firmware's own version string
-        if: startsWith(github.ref, 'refs/tags/')
+        if: needs.changes.outputs.release == 'true'
         shell: bash
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -64,7 +138,7 @@ jobs:
           path: firmware/dist/*
 
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: needs.changes.outputs.release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           files: firmware/dist/*

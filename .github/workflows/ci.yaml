@@ -3,8 +3,26 @@ name: tests
 on:
   push:
     branches: ["**"]
+    # The suite reads firmware sources directly: test_device_contract.py parses
+    # frame_client.c, and test_portal.py parses provisioning.c through
+    # portal_preview.py. So firmware changes must re-run the Python tests even
+    # though no Python changed.
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "firmware/main/**"
+      - "firmware/tools/**"
+      - "pyproject.toml"
+      - ".github/workflows/ci.yaml"
   pull_request:
-  workflow_call:      # so the release workflows can gate on this
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "firmware/main/**"
+      - "firmware/tools/**"
+      - "pyproject.toml"
+      - ".github/workflows/ci.yaml"
+  workflow_call:      # release workflows gate on this; paths do not apply here
 
 jobs:
   pytest:

@@ -45,8 +45,9 @@ body{margin:0;background:var(--surface-0);color:var(--text-1);
 a{color:var(--series-1)}
 
 header{display:flex;align-items:center;gap:.75rem;margin-bottom:.35rem}
-.mark{display:flex;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px var(--border)}
-.mark i{width:11px;height:22px;display:block}
+/* The mark is the PicPak silhouette in Immich's brand colours; its inner
+   shapes are transparent moats, so it sits on any surface unchanged. */
+.mark{width:26px;height:26px;display:block;flex:0 0 auto}
 h1{font-size:1.15rem;font-weight:650;margin:0;letter-spacing:-.01em}
 .sub{color:var(--text-2);font-size:.875rem;margin:0 0 1.75rem}
 
@@ -376,13 +377,11 @@ def render(*, devices, histories, settings, pool, immich_url, immich_ok, interva
 
     return f"""<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ImmPakt</title><style>{CSS}</style></head><body>
+<title>ImmPakt</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>{CSS}</style></head><body>
 <div class="wrap">
   <header>
-    <span class="mark" aria-hidden="true">
-      <i style="background:var(--panel-k)"></i><i style="background:var(--panel-w)"></i>
-      <i style="background:var(--panel-y)"></i><i style="background:var(--panel-r)"></i>
-    </span>
+    <svg class="mark" viewBox="0 0 256 256" aria-hidden="true"><defs><mask id="mk"><rect width="256" height="256" fill="#fff"/><rect x="16.13" y="16.13" width="223.74" height="164.86" rx="20.99"/><circle cx="55.04" cy="216.32" r="29.95"/><rect x="85.25" y="196.61" width="154.62" height="39.42" rx="16.13"/></mask></defs><rect x="2.56" y="2.56" width="250.88" height="250.88" rx="25.6" fill="#1E83F7" stroke="#FFB400" stroke-width="5.12" mask="url(#mk)"/><rect x="26.88" y="26.88" width="202.24" height="143.36" rx="10.24" fill="#ED79B5"/><circle cx="55.04" cy="216.32" r="19.2" fill="#FA2921"/><rect x="96" y="207.36" width="133.12" height="17.92" rx="5.38" fill="#18C249"/></svg>
     <h1>ImmPakt</h1>
   </header>
   <p class="sub">Serving Immich photos to e-ink frames &middot;

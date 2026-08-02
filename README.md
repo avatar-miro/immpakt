@@ -416,19 +416,28 @@ What is **not**, and is your decision to accept:
 
 ## Releases
 
-Pushing a `v*` tag runs both release workflows:
+Pushing a `v*` tag can produce two independent releases, and each one only
+happens if that component actually changed **since the previous tag**:
 
-- **Firmware**: built in `espressif/idf:release-v5.3`, published to a GitHub
-  Release as `immpakt.bin` + bootloader + partition table, plus a single
-  `immpakt-merged.bin` for one-command or browser flashing, with `SHA256SUMS`.
-- **Docker**: `youruser/immpakt:1.2.3`, `:1.2` and `:latest`, for amd64 and
-  arm64. `latest` uses `latest=auto`, so a prerelease tag like `v1.0.0-rc1`
-  publishes itself without hijacking `latest`.
+| Tag contains | Firmware release | Docker image |
+| --- | --- | --- |
+| server changes only | skipped | `1.2.3`, `1.2`, `latest` |
+| firmware changes only | binaries + `SHA256SUMS` | skipped |
+| both | both | both |
 
-Any other push to `main` publishes **`:snapshot`** only, so `latest` never
-silently moves to an untagged commit. Pull requests build both but push neither.
+So tagging a docs fix publishes nothing, and a server-only release does not
+hand you an identical firmware binary with a new version number on it.
 
-Needs two repository secrets: `DOCKERHUB_USER` and `DOCKERHUB_PAT`.
+- **Firmware** is built in `espressif/idf:release-v5.3` and published to a
+  GitHub Release as `immpakt.bin` plus bootloader and partition table, with a
+  single `immpakt-merged.bin` for one-command or browser flashing.
+- **Docker** publishes for amd64 and arm64. `latest` uses `latest=auto`, so a
+  prerelease tag like `v1.0.0-rc1` publishes itself without moving `latest`.
+
+Pushes to `main` and pull requests build and test the affected component but
+publish nothing. `workflow_dispatch` forces a build by hand.
+
+Needs two repository secrets: `DOCKERHUB_USER` and `DOCKERHUB_PAT` (Read & Write).
 
 ## Development
 

@@ -106,6 +106,12 @@ async def require_login(request: Request, call_next):
     return JSONResponse({"detail": "authentication required"}, status_code=401)
 
 
+@app.get("/favicon.svg")
+def favicon():
+    return Response(auth.ICON_SVG, media_type="image/svg+xml",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.get("/login", response_class=HTMLResponse)
 def login_form():
     a = state.cfg.server.auth

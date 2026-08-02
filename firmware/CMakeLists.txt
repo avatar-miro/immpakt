@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 # falls back to `git describe`, which advertises the ancient
 # pre-m4-provisioning milestone tag. Keep in sync with FW_VERSION in
 # main/defaults.h when bumping releases.
-set(PROJECT_VER "0.0.1")
+set(PROJECT_VER "0.0.3")
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 # Names the app binary (build/immpakt.bin).
 project(immpakt)

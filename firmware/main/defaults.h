@@ -29,7 +29,7 @@
 #endif
 
 #ifndef FW_VERSION
-#define FW_VERSION          "0.0.1"
+#define FW_VERSION          "0.0.3"
 #endif
 #define DEVICE_KIND         "immpakt"
 

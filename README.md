@@ -280,6 +280,38 @@ way `setup_get_handler()` does, re-reading on every request, so edit, refresh,
 repeat. `--error "..."` previews the failure banner, `--page thanks` the
 post-submit page, `--blank` a factory-fresh device.
 
+### Volume permissions
+
+Works on a fresh host with nothing prepared. `./data` and `./config` are bind
+mounts carrying the **host's** ownership, not the image's, so startup uses root
+only to chown them to `PUID:PGID`, then drops privileges with `setpriv`. The
+process serving traffic is never root. This is the same pattern most
+self-hosted images use, and it is why they need no host preparation.
+
+Point it at your own user and `./data` stays readable outside the container:
+
+```ini
+# .env beside docker-compose.yml
+PUID=1000
+PGID=1000
+```
+
+If you would rather root were never involved at all, set an explicit user and
+own the directories yourself:
+
+```yaml
+user: "1000:1000"
+```
+```bash
+mkdir -p data config && sudo chown -R 1000:1000 data config
+```
+
+The entrypoint detects that case and only verifies, since it cannot repair
+anything. It probes by actually writing a file rather than testing permission
+bits, because `[ -w ]` reflects what the kernel thinks and some volume drivers
+misreport it. On failure it names the uid, the directory's owner and the exact
+command to run, instead of a sqlite traceback.
+
 ## Security
 
 Designed for a **trusted LAN**. Before exposing it wider, know what it does and

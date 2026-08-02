@@ -1,6 +1,6 @@
 [project]
 name = "immpakt"
-version = "0.0.1"
+version = "0.0.3"
 description = "Serve Immich photos to a PicPak 4.2\" four-colour e-ink frame"
 requires-python = ">=3.11"
 dependencies = [

@@ -8,6 +8,17 @@ services:
     # build: .
     container_name: immpakt
     restart: unless-stopped
+    # The app serves traffic as PUID:PGID, never as root. Startup uses root
+    # only to chown the mounted volumes to that uid, then drops privileges -
+    # so this works on a fresh host with nothing prepared.
+    #
+    # Set these to your own user and ./data stays readable outside the
+    # container:  printf 'PUID=%s\nPGID=%s\n' "$(id -u)" "$(id -g)" >> .env
+    #
+    # If you would rather root were never involved at all, uncomment `user:`
+    # and chown ./data ./config yourself; the entrypoint will detect it and
+    # only verify.
+    #   user: "1000:1000"
     ports:
       # Host port only. The app inside the container always listens on 8080, so
       # the healthcheck and EXPOSE stay valid whatever you publish it as.
@@ -20,10 +31,12 @@ services:
       #
       # IMMICH_URL: "http://immich-server:2283"
       IMMICH_API_KEY: "${IMMICH_API_KEY:-}"
+      PUID: "${PUID:-10001}"
+      PGID: "${PGID:-10001}"
       # IMMPAKT_DEVICE_KEY: "optional shared secret if exposed beyond the LAN"
     volumes:
       - ./data:/data
-      - ./config:/config
+      - ./config:/config:ro   # read-only: the app never writes its config
     # Uncomment when Immich runs in this same compose project:
     # networks: [immich_default]
 # networks:

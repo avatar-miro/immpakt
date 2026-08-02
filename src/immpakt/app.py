@@ -22,11 +22,11 @@ import threading
 from collections import OrderedDict
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Form, HTTPException, Query, Request, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from . import config as config_mod
-from . import dashboard, overlay, panel, render
+from . import auth, dashboard, overlay, panel, render
 from .immich import Asset, ImmichClient
 from .selector import AssetPool, pick
 from .store import Store
@@ -50,6 +50,7 @@ class State:
         )
         self.pool = AssetPool(self.client, cfg.source)
         self.store = Store(f"{cfg.server.data_dir}/immpakt.db")
+        self.session_secret = auth.load_or_create_secret(cfg.server.data_dir)
 
 
 state: State  # set in the lifespan handler
@@ -63,6 +64,10 @@ async def lifespan(app: FastAPI):
     state = State(cfg)
     if not cfg.immich.api_key:
         log.warning("no Immich API key configured -- set IMMICH_API_KEY or immich.api_key")
+    if cfg.server.auth.enabled:
+        auth.warn_if_default(cfg.server.auth.username, cfg.server.auth.password)
+    else:
+        log.warning("dashboard authentication is DISABLED (server.auth.enabled: false)")
     # Warm the pool off the request path so the first device wake is fast.
     threading.Thread(target=state.pool.ensure_fresh, daemon=True).start()
     yield
@@ -71,6 +76,67 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ImmPakt", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def require_login(request: Request, call_next):
+    """Gate everything except the login pages and the device's own endpoint.
+
+    The frame is asleep with its radio off and has no way to hold a session, so
+    /api/frame.bin must never be behind the login -- it is gated by
+    server.device_key instead.
+    """
+    a = state.cfg.server.auth
+    path = request.url.path
+    exempt = (
+        not a.enabled
+        or path in auth.PUBLIC_PATHS
+        or path.startswith(auth.DEVICE_PREFIX)
+    )
+    if exempt:
+        return await call_next(request)
+
+    if auth.verify(state.session_secret, request.cookies.get(auth.COOKIE)):
+        return await call_next(request)
+
+    # A browser gets sent to the form; an API client gets a status code it can
+    # act on rather than a page of HTML it will try to parse as JSON.
+    if "text/html" in request.headers.get("accept", ""):
+        return RedirectResponse("/login", status_code=303)
+    return JSONResponse({"detail": "authentication required"}, status_code=401)
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_form():
+    a = state.cfg.server.auth
+    return auth.login_page(dashboard.CSS,
+                           default_creds=a.password == auth.DEFAULT_PASSWORD)
+
+
+@app.post("/login")
+def login_submit(username: str = Form(""), password: str = Form("")):
+    a = state.cfg.server.auth
+    if not auth.check_password(a.username, a.password, username, password):
+        log.warning("failed dashboard login for %r", username[:32])
+        return HTMLResponse(
+            auth.login_page(dashboard.CSS, error="Wrong username or password.",
+                            default_creds=a.password == auth.DEFAULT_PASSWORD),
+            status_code=401,
+        )
+    r = RedirectResponse("/", status_code=303)
+    r.set_cookie(
+        auth.COOKIE, auth.issue(state.session_secret, a.username, a.session_hours),
+        max_age=a.session_hours * 3600, httponly=True, samesite="lax",
+        secure=a.cookie_secure,
+    )
+    return r
+
+
+@app.get("/logout")
+def logout():
+    r = RedirectResponse("/login", status_code=303)
+    r.delete_cookie(auth.COOKIE)
+    return r
 
 
 # --------------------------------------------------------------------------

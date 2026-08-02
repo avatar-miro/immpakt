@@ -14,6 +14,15 @@ server:
   data_dir: ./data
   device_key: ""       # optional shared secret; devices then send ?key=<secret>
 
+  # Login for the dashboard and management API. NOT applied to /api/frame.bin:
+  # a sleeping frame cannot log in, so that endpoint is gated by device_key.
+  auth:
+    enabled: true
+    username: immpakt
+    password: immpakt       # CHANGE THIS, or set IMMPAKT_PASSWORD
+    session_hours: 720      # 30 days
+    cookie_secure: false    # true only behind a TLS-terminating proxy
+
 # Which photos are eligible. Leave everything empty for the whole library.
 source:
   albums: []           # album UUIDs -- the usual way to curate a frame

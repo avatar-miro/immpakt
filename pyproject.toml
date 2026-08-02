@@ -10,6 +10,7 @@ dependencies = [
     "pillow>=10.0",
     "numpy>=1.26",
     "pyyaml>=6.0",
+    "python-multipart>=0.0.9",   # login form posts
 ]
 
 [project.optional-dependencies]

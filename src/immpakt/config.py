@@ -85,6 +85,25 @@ class FrameConfig:
 
 
 @dataclass
+class AuthConfig:
+    """Login for the dashboard and management API.
+
+    Not applied to /api/frame.bin: a frame that is asleep with its radio off
+    cannot log in. That endpoint stays gated by server.device_key only.
+    """
+
+    enabled: bool = True
+    username: str = "immpakt"
+    password: str = "immpakt"
+    session_hours: int = 720          # 30 days
+    # Set true when a TLS-terminating proxy sits in front, so the cookie is
+    # never sent over plain http. Left false by default because the common
+    # deployment is plain http on a LAN, where a Secure cookie is never sent
+    # at all and login would appear to silently fail.
+    cookie_secure: bool = False
+
+
+@dataclass
 class ServerConfig:
     bind: str = "0.0.0.0"
     port: int = 8080
@@ -92,6 +111,7 @@ class ServerConfig:
     # Optional shared secret; when set, devices must send ?key=<secret>.
     # Unnecessary on a LAN, worth setting if you expose this to the internet.
     device_key: str = ""
+    auth: AuthConfig = field(default_factory=AuthConfig)
 
 
 @dataclass
@@ -202,5 +222,9 @@ def load(path: str | Path | None = None) -> Config:
         cfg.server.data_dir = _env("DATA_DIR")
     if _env("DEVICE_KEY"):
         cfg.server.device_key = _env("DEVICE_KEY")
+    if _env("USERNAME"):
+        cfg.server.auth.username = _env("USERNAME")
+    if _env("PASSWORD"):
+        cfg.server.auth.password = _env("PASSWORD")
 
     return cfg

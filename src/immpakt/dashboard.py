@@ -393,6 +393,7 @@ def render(*, devices, histories, settings, pool, immich_url, immich_ok, interva
   <footer>
     <a href="/preview.png?next=true">Preview next photo</a>
     <a href="/api/status">Status JSON</a>
+    <a href="/logout">Sign out</a>
     <span>400&times;300 &middot; 4-colour &middot; 30000-byte frames</span>
   </footer>
 </div>

@@ -7,6 +7,7 @@ from PIL import Image
 from immpakt import app as app_mod
 from immpakt import config as config_mod
 from immpakt.immich import Asset
+from immpakt import auth as auth_mod
 from immpakt.store import Store
 
 
@@ -47,17 +48,20 @@ class FakePool:
 
 @pytest.fixture
 def client(tmp_path):
-    def build(n_assets=8, **server_kw):
+    def build(n_assets=8, auth_enabled=False, **server_kw):
         cfg = config_mod.Config()
         cfg.server.data_dir = str(tmp_path)
         for k, v in server_kw.items():
             setattr(cfg.server, k, v)
+        # Most tests predate the login; opt in per test.
+        cfg.server.auth.enabled = auth_enabled
 
         st = app_mod.State.__new__(app_mod.State)
         st.cfg = cfg
         st.client = FakeClient()
         st.pool = FakePool([Asset(id=f"asset-{i:03d}") for i in range(n_assets)])
         st.store = Store(tmp_path / "t.db")
+        st.session_secret = auth_mod.load_or_create_secret(str(tmp_path))
         app_mod.state = st
         app_mod._RENDER_CACHE.clear()
         # Bypass lifespan so no real Immich client is constructed.

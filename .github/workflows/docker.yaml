@@ -4,7 +4,13 @@ on:
   push:
     branches: [main, master]
     tags: ["v*"]
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/docker.yaml'
   pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/docker.yaml'
   workflow_dispatch:
 
 concurrency:

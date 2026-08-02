@@ -181,15 +181,38 @@ rather than blanking the frame.
 
 ## Dashboard
 
-Each registered frame gets a card showing the photo currently on its panel,
-battery level and history, signal strength, and what is queued next, with a
-Skip button if you do not like it.
+<img src="res/webui.png" width="100%" alt="ImmPakt dashboard: stat tiles for photo count, registered frames, cadence and Immich status, above a card showing one frame's current photo, battery and signal">
 
-Settings are **queued, not pushed**. The radio is off until the device wakes, so
-an edit lands on the next wake; the panel tells you when that is ("applies in
-~5h, or tap the frame's button now"). Cadence and the caption overlay are
-editable per device and stored in SQLite, deliberately not written back into
-your hand-commented `config.yaml`.
+Everything is on one page. Four tiles across the top answer the questions you
+actually open it for: how many photos are eligible, how many frames are
+registered, how often they change, and whether Immich is reachable.
+
+Below that, a card per frame showing:
+
+- **the photo currently on that panel**, rendered exactly as the device has it
+- **battery** as a percentage, raw millivolts, and a sparkline of the last wakes
+- **signal strength** and how long ago it last checked in
+- **what is queued next**, with a Skip button if you do not like it
+
+The battery sparkline plots on a fixed 0-100% scale rather than auto-scaling to
+its own range, so a healthy 92-95% reads as a flat line near the top instead of
+a dramatic-looking cliff.
+
+Sign-in is required (see [Security](#security)); the frame's own endpoint is not
+behind it, because a device asleep with its radio off cannot log in.
+
+### Settings are queued, not pushed
+
+That radio being off most of the time is the whole design, so there is no way to
+push a change to a frame. Edits are stored and collected on the device's next
+wake, and the panel says when that will be ("applies in ~5h, or tap the frame's
+button now") instead of pretending it took effect.
+
+Cadence and the caption overlay are editable per device. They live in SQLite,
+deliberately not written back into your hand-commented `config.yaml` - a web UI
+rewriting that file would destroy the comments and race with anyone editing it
+by hand. Layering is file, then `devices.<id>`, then dashboard edits, so what
+you set in the browser wins.
 
 ## Battery
 
